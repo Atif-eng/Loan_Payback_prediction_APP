@@ -1,16 +1,16 @@
-# Loan Payback Prediction 💰
+# Loan Payback Prediction 
 
 ![Python](https://img.shields.io/badge/Python-3.8%2B-blue)
 ![Library](https://img.shields.io/badge/Library-Scikit--Learn-orange)
 ![Library](https://img.shields.io/badge/Library-XGBoost-red)
 ![Status](https://img.shields.io/badge/Status-Completed-success)
 
-## 📌 Project Overview
+## Project Overview
 This project aims to predict whether a borrower will pay back their loan or default. By analyzing financial and demographic data, the model helps financial institutions assess credit risk, minimize losses, and make informed lending decisions.
 
 **Author:** Muhammad Atif
 
-## 📂 Dataset
+## Dataset
 The dataset includes various details about the borrowers and their loan attributes.
 
 - **Target Variable:** `loan_paid_back` (1 = Paid Back, 0 = Defaulted).
@@ -29,7 +29,7 @@ The dataset includes various details about the borrowers and their loan attribut
   - `imblearn` for handling class imbalance (SMOTE).
   - `pickle` for saving the trained model.
 
-## 📊 Project Workflow
+## Project Workflow
 
 ### 1. Data Analysis & Exploration
 - **Statistical Analysis:** Examined distributions of income, loan amounts, and credit scores.
