@@ -19,7 +19,7 @@ The dataset includes various details about the borrowers and their loan attribut
   - **Demographic:** `gender`, `marital_status`, `education_level`, `employment_status`.
   - **Loan Details:** `loan_purpose`, `grade_subgrade`.
 
-## 🛠 Tech Stack
+## Tech Stack
 - **Language:** Python
 - **Libraries:**
   - `pandas` & `numpy` for data manipulation.
