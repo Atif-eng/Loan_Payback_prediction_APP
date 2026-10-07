@@ -1,95 +1,85 @@
-import streamlit as st
 import pickle
+
 import pandas as pd
-import numpy as np
+import streamlit as st
 
-# 1. Load the Model
-model_filename = 'loan_payback_model.pkl'
+from src.inference import load_model, prepare_user_input
 
-try:
-    with open(model_filename, 'rb') as file:
-        model = pickle.load(file)
-except FileNotFoundError:
-    st.error(f"Error: The file '{model_filename}' was not found. Please upload it to the same directory.")
-    st.stop()
 
-# 2. App Title
+st.set_page_config(page_title="Loan Payback Prediction App", page_icon="💰", layout="wide")
+
+
+@st.cache_resource
+def get_model(model_path: str = "loan_payback_model.pkl"):
+    with open(model_path, "rb") as file:
+        return pickle.load(file)
+
+
+model = get_model()
+
 st.title("Loan Payback Prediction App")
-st.write("Enter the applicant's details below to predict if the loan will be paid back.")
+st.write("Enter borrower and loan information to estimate whether the loan will be repaid.")
 
-# --- USER INPUT SECTION ---
 st.sidebar.header("Applicant Information")
 
-# Function to get user input
-def user_input_features():
-    # --- Numerical Features ---
-    # Adjust min_value and max_value based on your real data range
-    annual_income = st.sidebar.number_input("Annual Income $", min_value=30000, value=400000)
-    loan_amount = st.sidebar.number_input("Loan Amount $", min_value=1000, value=50000)
-    interest_rate = st.sidebar.number_input("Interest Rate (%)", min_value=3.2, value=20.0, step=0.1)
-    
-    # --- Categorical Features ---
-    # IMPORTANT: You must list ALL options that were in your training data.
-    # The LabelEncoder usually sorts them alphabetically (A-Z).
-    # Please update these lists with the exact values from your dataset.
-    
-    gender_options = ["Female", "Male"] 
-    employment_options = ["Employed", "Self-Employed", "Unemployed", "Student","Retired"] 
-    education_options = ["High School", "Bachelor's", "Master's","Other", "PhD"] 
-    marital_options = ["Single", "Married", "Divorced","Widoved"]
-    
-    # Select boxes
-    gender = st.sidebar.selectbox("Gender", gender_options)
-    marital_status = st.sidebar.selectbox("Marital Status", marital_options)
-    education_level = st.sidebar.selectbox("Education Level", education_options)
-    employment_status = st.sidebar.selectbox("Employment Status", employment_options)
+annual_income = st.sidebar.number_input("Annual Income ($)", min_value=5000.0, value=60000.0, step=1000.0)
+debt_to_income_ratio = st.sidebar.number_input("Debt-to-Income Ratio", min_value=0.0, max_value=1.0, value=0.15, step=0.01)
+credit_score = st.sidebar.number_input("Credit Score", min_value=300, max_value=850, value=680, step=1)
+loan_amount = st.sidebar.number_input("Loan Amount ($)", min_value=500.0, value=18000.0, step=100.0)
+interest_rate = st.sidebar.number_input("Interest Rate (%)", min_value=3.2, max_value=25.0, value=12.5, step=0.1)
 
-    # --- Encoding (Text to Numbers) ---
-    # Your notebook used LabelEncoder, which assigns numbers alphabetically (0, 1, 2...)
-    # We replicate that logic here automatically by sorting the options.
-    
-    def encode_option(selected_option, all_options):
-        # Sort options alphabetically to match LabelEncoder behavior
-        sorted_options = sorted(all_options)
-        # Return the index (0, 1, 2...)
-        return sorted_options.index(selected_option)
+gender = st.sidebar.selectbox("Gender", ["Female", "Male"])
+marital_status = st.sidebar.selectbox("Marital Status", ["Divorced", "Married", "Single", "Widowed"])
+education_level = st.sidebar.selectbox("Education Level", ["Bachelor's", "High School", "Master's", "Other", "PhD"])
+employment_status = st.sidebar.selectbox("Employment Status", ["Employed", "Retired", "Self-employed", "Student", "Unemployed"])
+loan_purpose = st.sidebar.selectbox("Loan Purpose", [
+    "Auto",
+    "Business",
+    "Debt consolidation",
+    "Education",
+    "Home improvement",
+    "Medical",
+    "Moving",
+    "Other",
+    "Vacation",
+    "Wedding",
+])
+grade_subgrade = st.sidebar.selectbox("Grade/Subgrade", [
+    "A1", "A2", "A3", "A4", "A5",
+    "B1", "B2", "B3", "B4", "B5",
+    "C1", "C2", "C3", "C4", "C5",
+    "D1", "D2", "D3", "D4", "D5",
+    "F1", "F2", "F3", "F4", "F5",
+])
 
-    # Create the data dictionary with encoded values
-    # NOTE: The order of columns here MUST match the order in your X_train
-    data = {
-        'annual_income': annual_income,
-        'loan_amount': loan_amount,
-        'interest_rate': interest_rate,
-        'gender': encode_option(gender, gender_options),
-        'marital_status': encode_option(marital_status, marital_options),
-        'education_level': encode_option(education_level, education_options),
-        'employment_status': encode_option(employment_status, employment_options)
-    }
-    
-    # If your model expects features in a specific order, you might need to reorder the DataFrame columns later.
-    features = pd.DataFrame(data, index=[0])
-    return features
+user_inputs = {
+    "annual_income": annual_income,
+    "debt_to_income_ratio": debt_to_income_ratio,
+    "credit_score": credit_score,
+    "loan_amount": loan_amount,
+    "interest_rate": interest_rate,
+    "gender": gender,
+    "marital_status": marital_status,
+    "education_level": education_level,
+    "employment_status": employment_status,
+    "loan_purpose": loan_purpose,
+    "grade_subgrade": grade_subgrade,
+}
 
-# Get the input dataframe
-input_df = user_input_features()
+input_df = prepare_user_input(user_inputs)
+st.subheader("User Input Parameters")
+st.dataframe(input_df, use_container_width=True)
 
-# Display the input parameters for verification
-st.subheader("User Input parameters")
-st.write(input_df)
-
-# --- PREDICTION SECTION ---
 if st.button("Predict"):
     try:
-        # Note: input_df columns might need reordering to match training data exactly.
-        # If you get a 'feature mismatch' error, check the column order.
         prediction = model.predict(input_df)
-        
+        result = int(prediction[0])
+
         st.subheader("Prediction Result")
-        if prediction[0] == 1:
-            st.success("Result: Loan will be **PAID BACK**")
+        if result == 1:
+            st.success("Result: Loan will be PAID BACK")
         else:
-            st.warning("Result: Loan will **NOT** be paid back")
-            
-    except Exception as e:
-        st.error(f"An error occurred: {e}")
-        st.info("Tip: Ensure the input columns match exactly what the model expects (order and number).")
+            st.warning("Result: Loan will NOT be paid back")
+    except Exception as exc:
+        st.error(f"An error occurred while generating the prediction: {exc}")
+        st.info("Please verify that the model and feature ordering match the training pipeline.")
